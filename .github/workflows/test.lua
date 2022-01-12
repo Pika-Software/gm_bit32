@@ -11,8 +11,6 @@ local function run_tests()
 	print('Module bit32 library:')
 	print("1 << -1 = ", bit32.lshift(1, -1))
 	print("8450794 << 8 = ", bit32.lshift(8450794, 8))
-
-	error('simple error')
 end
 
 print('Running tests')

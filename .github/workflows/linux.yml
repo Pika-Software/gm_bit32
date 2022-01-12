@@ -85,13 +85,18 @@ jobs:
         working-directory: ${{ env.GMOD64 }}
         run: cat garrysmod/console.log
 
-      - name: Run Garrysmod x32
+      - name: "[x32] Run Garrysmod"
         working-directory: ${{ env.GMOD }}
         timeout-minutes: 5
         run: |
           rm -f garrysmod/data/success.txt garrysmod/console.log
           ./start.sh
           if [[ $(< garrysmod/data/success.txt) != "$GITHUB_SHA" ]]; then exit 1; fi
+
+      - name: "[x32] Print Log" 
+        if: always()
+        working-directory: ${{ env.GMOD }}
+        run: cat garrysmod/console.log
 
       - name: Debug Information
         if: failure()
