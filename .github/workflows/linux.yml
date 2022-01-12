@@ -1,0 +1,96 @@
+name: Linux
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: [self-hosted, linux, x64, debian10, gmod, premake5, garrysmod_common]
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Generate Project x64
+        run: $PREMAKE5 gmake --gmcommon="${GARRYSMOD_COMMON64}"
+
+      - name: "[x64] Build Release With Symbols"
+        run: |
+          cd projects/linux/gmake
+          make -j2 config=releasewithsymbols_x86_64
+      - name: Upload Build
+        uses: actions/upload-artifact@v2
+        with:
+          name: ReleaseWithSymbols
+          if-no-files-found: error
+          path: projects/linux/gmake/x86_64/ReleaseWithSymbols/gmsv_bit32_linux64.dll
+
+      - name: Generate Project x32
+        run: $PREMAKE5 gmake --gmcommon="${GARRYSMOD_COMMON}"
+
+      - name: "[x32] Build Release With Symbols"
+        run: |
+          cd projects/linux/gmake
+          make -j2 config=releasewithsymbols_x86
+      - name: Upload Build
+        uses: actions/upload-artifact@v2
+        with:
+          name: ReleaseWithSymbols
+          if-no-files-found: error
+          path: projects/linux/gmake/x86/ReleaseWithSymbols/gmsv_bit32_linux.dll
+
+  
+  tests:
+    needs: build
+    runs-on: [self-hosted, linux, x64, debian10, gmod]
+
+    steps:
+      - uses: actions/checkout@v2
+        # with:
+        #   submodules: 'recursive'
+
+      - name: Setup Enviroment Variables
+        run: |
+          echo GMOD=$GMOD >> $GITHUB_ENV
+      
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ReleaseWithSymbols
+          path: ${{ env.GMOD }}/garrysmod/lua/bin/
+      
+      - name: Copy test.lua
+        run: |
+          mkdir -p $GMOD/garrysmod/addons/test/lua/autorun/
+          cp .github/workflows/test.lua $GMOD/garrysmod/addons/test/lua/autorun/
+      - name: Run Garrysmod x64
+        working-directory: ${{ env.GMOD }}
+        timeout-minutes: 5
+        run: |
+          rm -f garrysmod/data/success.txt
+          ./start64.sh
+          if [[ $(< garrysmod/data/success.txt) != "$GITHUB_SHA" ]]; then exit 1; fi
+#      - name: Run Garrysmod x32
+#        working-directory: ${{ env.GMOD }}
+#        timeout-minutes: 5
+#        run: |
+#          rm -f garrysmod/data/success.txt
+#          ./start.sh
+#          if [[ $(< garrysmod/data/success.txt) != "$GITHUB_SHA" ]]; then exit 1; fi
+
+      - name: Debug Information
+        if: failure()
+        working-directory: ${{ env.GMOD }}
+        run: |
+          tree garrysmod/lua/bin
+          echo ldd x64
+          LD_LIBRARY_PATH=.:bin/linux64:$LD_LIBRARY_PATH ldd -r garrysmod/lua/bin/gmsv_bit32_linux64.dll
+          
+#          echo ldd x32
+#          LD_LIBRARY_PATH=.:bin/linux32:$LD_LIBRARY_PATH ldd -r garrysmod/lua/bin/gmsv_bit32_linux.dll
+
+      - name: Cleanup
+        if: always()
+        working-directory: ${{ env.GMOD }}
+        run: rm -rf garrysmod/data/* garrysmod/lua/bin/* garrysmod/addons/*
