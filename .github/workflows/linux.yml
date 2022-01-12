@@ -72,19 +72,24 @@ jobs:
           cp .github/workflows/test.lua $GMOD/garrysmod/addons/test/lua/autorun/
           cp .github/workflows/test.lua $GMOD64/garrysmod/addons/test/lua/autorun/
 
-      - name: Run Garrysmod x64
+      - name: "[x64] Run Garrysmod"
         working-directory: ${{ env.GMOD64 }}
         timeout-minutes: 5
         run: |
-          rm -f garrysmod/data/success.txt
+          rm -f garrysmod/data/success.txt garrysmod/console.log
           ./start.sh
           if [[ $(< garrysmod/data/success.txt) != "$GITHUB_SHA" ]]; then exit 1; fi
+
+      - name: "[x64] Print Log" 
+        if: always()
+        working-directory: ${{ env.GMOD64 }}
+        run: cat garrysmod/console.log
 
       - name: Run Garrysmod x32
         working-directory: ${{ env.GMOD }}
         timeout-minutes: 5
         run: |
-          rm -f garrysmod/data/success.txt
+          rm -f garrysmod/data/success.txt garrysmod/console.log
           ./start.sh
           if [[ $(< garrysmod/data/success.txt) != "$GITHUB_SHA" ]]; then exit 1; fi
 
