@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, linux, x64, debian10, gmod, premake5, garrysmod_common]
+    runs-on: [self-hosted, debian10, premake5, garrysmod_common]
 
     steps:
       - uses: actions/checkout@v2
@@ -19,6 +19,7 @@ jobs:
         run: |
           cd projects/linux/gmake
           make -j2 config=releasewithsymbols_x86_64
+
       - name: Upload Build
         uses: actions/upload-artifact@v2
         with:
@@ -33,6 +34,7 @@ jobs:
         run: |
           cd projects/linux/gmake
           make -j2 config=releasewithsymbols_x86
+  
       - name: Upload Build
         uses: actions/upload-artifact@v2
         with:
@@ -43,54 +45,59 @@ jobs:
   
   tests:
     needs: build
-    runs-on: [self-hosted, linux, x64, debian10, gmod]
+    runs-on: [self-hosted, debian10, gmod, gmod64]
 
     steps:
-      - uses: actions/checkout@v2
-        # with:
-        #   submodules: 'recursive'
-
       - name: Setup Enviroment Variables
         run: |
           echo GMOD=$GMOD >> $GITHUB_ENV
+          echo GMOD64=$GMOD64 >> $GITHUB_ENV
       
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
           name: ReleaseWithSymbols
-          path: ${{ env.GMOD }}/garrysmod/lua/bin/
+          path: |
+            ${{ env.GMOD }}/garrysmod/lua/bin/
+            ${{ env.GMOD64 }}/garrysmod/lua/bin/
       
       - name: Copy test.lua
         run: |
-          mkdir -p $GMOD/garrysmod/addons/test/lua/autorun/
+          mkdir -p $GMOD/garrysmod/addons/test/lua/autorun/ $GMOD64/garrysmod/addons/test/lua/autorun/
           cp .github/workflows/test.lua $GMOD/garrysmod/addons/test/lua/autorun/
+          cp .github/workflows/test.lua $GMOD64/garrysmod/addons/test/lua/autorun/
+
       - name: Run Garrysmod x64
+        working-directory: ${{ env.GMOD64 }}
+        timeout-minutes: 5
+        run: |
+          rm -f garrysmod/data/success.txt
+          ./start.sh
+          if [[ $(< garrysmod/data/success.txt) != "$GITHUB_SHA" ]]; then exit 1; fi
+
+      - name: Run Garrysmod x32
         working-directory: ${{ env.GMOD }}
         timeout-minutes: 5
         run: |
           rm -f garrysmod/data/success.txt
-          ./start64.sh
+          ./start.sh
           if [[ $(< garrysmod/data/success.txt) != "$GITHUB_SHA" ]]; then exit 1; fi
-#      - name: Run Garrysmod x32
-#        working-directory: ${{ env.GMOD }}
-#        timeout-minutes: 5
-#        run: |
-#          rm -f garrysmod/data/success.txt
-#          ./start.sh
-#          if [[ $(< garrysmod/data/success.txt) != "$GITHUB_SHA" ]]; then exit 1; fi
 
       - name: Debug Information
         if: failure()
-        working-directory: ${{ env.GMOD }}
         run: |
-          tree garrysmod/lua/bin
           echo ldd x64
-          LD_LIBRARY_PATH=.:bin/linux64:$LD_LIBRARY_PATH ldd -r garrysmod/lua/bin/gmsv_bit32_linux64.dll
-          
-#          echo ldd x32
-#          LD_LIBRARY_PATH=.:bin/linux32:$LD_LIBRARY_PATH ldd -r garrysmod/lua/bin/gmsv_bit32_linux.dll
+          LD_LIBRARY_PATH=.:bin/linux64:$LD_LIBRARY_PATH ldd -r $GMOD64/garrysmod/lua/bin/gmsv_bit32_linux64.dll
 
-      - name: Cleanup
+          echo ldd x32
+          LD_LIBRARY_PATH=.:bin:$LD_LIBRARY_PATH ldd -r $GMOD/garrysmod/lua/bin/gmsv_bit32_linux.dll
+
+      - name: Cleanup x64
+        if: always()
+        working-directory: ${{ env.GMOD64 }}
+        run: rm -rf garrysmod/data/* garrysmod/lua/bin/* garrysmod/addons/*
+
+      - name: Cleanup x32
         if: always()
         working-directory: ${{ env.GMOD }}
         run: rm -rf garrysmod/data/* garrysmod/lua/bin/* garrysmod/addons/*
