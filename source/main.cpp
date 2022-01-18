@@ -1,5 +1,4 @@
 #include <GarrysMod/Lua/Interface.h>
-#include <GarrysMod/Lua/LuaInterface.h>
 
 extern "C" {
 	#define LUAI_INT32 int
@@ -8,8 +7,7 @@ extern "C" {
 
 GMOD_MODULE_OPEN()
 {
-	lua_State* L = LUA->GetState();
-	luaopen_bit32(L);
+	luaopen_bit32(LUA->GetState());
 
 	return 0;
 }
