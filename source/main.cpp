@@ -1,20 +1,24 @@
-#include <GarrysMod/Lua/Interface.h>
-
 extern "C" {
 	#include "bit32.h"
 }
 
-GMOD_MODULE_OPEN()
+#ifdef _WIN32
+	#define DLL_EXPORT extern "C" __declspec( dllexport )
+#else
+	#define DLL_EXPORT extern "C" __attribute__((visibility("default")))
+#endif
+
+DLL_EXPORT int gmod13_open(lua_State* L)
 {
-	luaopen_bit32(LUA->GetState());
+	luaopen_bit32(L);
 
 	return 0;
 }
 
-GMOD_MODULE_CLOSE()
+DLL_EXPORT int gmod13_close(lua_State* L)
 {
-	LUA->PushNil();
-	LUA->SetField(GarrysMod::Lua::INDEX_GLOBAL, "bit32");
+	lua_pushnil(L);
+	lua_setfield(L, LUA_GLOBALSINDEX, "bit32");
 
 	return 0;
 }
