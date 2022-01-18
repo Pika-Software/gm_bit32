@@ -1,7 +1,6 @@
 #include <GarrysMod/Lua/Interface.h>
 
 extern "C" {
-	#define LUAI_INT32 int
 	#include "bit32.h"
 }
 

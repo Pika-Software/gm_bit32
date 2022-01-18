@@ -1,4 +1,6 @@
 /*
+ * Slightly edited for gm_bit32, added functions from lua 5.3.6 lbitlib.c
+ * 
  * This is the bit32 library (lbitlib.c) from lua 5.2.0-alpha,
  * backported to lua 5.1.4.
  *
@@ -29,12 +31,14 @@
 #define lbitlib_c
 #define LUA_LIB
 
-#include "lua.h"
+#include <lua.h>
 
-#include "lauxlib.h"
-#include "lualib.h"
+#include <lauxlib.h>
+#include <lualib.h>
 
  /* ===== begin modifications to lbitlib.c ===== */
+
+#define LUAI_INT32 int
 
  /* ----- adapted from lua-5.2.0-alpha luaconf.h: ----- */
  /*
@@ -278,6 +282,44 @@ static int b_rrot(lua_State* L) {
     return b_rot(L, -luaL_checkint(L, 2));
 }
 
+/*
+** get field and width arguments for field-manipulation functions,
+** checking whether they are valid.
+** ('luaL_error' called without 'return' to avoid later warnings about
+** 'width' being used uninitialized.)
+*/
+static int fieldargs(lua_State* L, int farg, int* width) {
+    lua_Integer f = luaL_checkinteger(L, farg);
+    lua_Integer w = luaL_optinteger(L, farg + 1, 1);
+    luaL_argcheck(L, 0 <= f, farg, "field cannot be negative");
+    luaL_argcheck(L, 0 < w, farg + 1, "width must be positive");
+    if (f + w > NBITS)
+        luaL_error(L, "trying to access non-existent bits");
+    *width = (int)w;
+    return (int)f;
+}
+
+#define mask(n)         (~((ALLONES << 1) << ((n) - 1)))
+
+static int b_extract(lua_State* L) {
+    int w;
+    lua_Unsigned r = trim(getuintarg(L, 1));
+    int f = fieldargs(L, 2, &w);
+    r = (r >> f) & mask(w);
+    lua_pushunsigned(L, trim(r));
+    return 1;
+}
+
+static int b_replace(lua_State* L) {
+    int w;
+    lua_Unsigned r = trim(getuintarg(L, 1));
+    lua_Unsigned v = trim(getuintarg(L, 2));
+    int f = fieldargs(L, 3, &w);
+    lua_Unsigned m = mask(w);
+    r = (r & ~(m << f)) | ((v & m) << f);
+    lua_pushunsigned(L, r);
+    return 1;
+}
 
 static const luaL_Reg bitlib[] = {
   {"arshift", b_arshift},
@@ -290,6 +332,8 @@ static const luaL_Reg bitlib[] = {
   {"rrotate", b_rrot},
   {"rshift", b_rshift},
   {"btest", b_test},
+  {"extract", b_extract},
+  {"replace", b_replace},
   {NULL, NULL}
 };
 
