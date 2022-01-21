@@ -2,10 +2,12 @@ extern "C" {
 	#include "bit32.h"
 }
 
-#ifdef WIN32
+#ifdef _WIN32 
 	#define DLL_EXPORT extern "C" __declspec(dllexport)
-#else
+#elif __linux__
 	#define DLL_EXPORT extern "C" __attribute__((visibility("default")))
+#else
+	#define DLL_EXPORT
 #endif
 
 DLL_EXPORT int gmod13_open(lua_State* L)
