@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  linux:
     runs-on: [self-hosted, debian10, premake5, garrysmod_common]
 
     steps:
@@ -34,7 +34,7 @@ jobs:
         run: |
           cd projects/linux/gmake
           make -j2 config=releasewithsymbols_x86
-  
+
       - name: Upload Build
         uses: actions/upload-artifact@v2
         with:
@@ -44,7 +44,7 @@ jobs:
 
   
   tests:
-    needs: build
+    needs: linux
     runs-on: [self-hosted, debian10, gmod, gmod64]
 
     steps:

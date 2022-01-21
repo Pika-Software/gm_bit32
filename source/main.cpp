@@ -2,7 +2,7 @@ extern "C" {
 	#include "bit32.h"
 }
 
-#ifdef _WIN32 
+#ifdef _WIN32
 	#define DLL_EXPORT extern "C" __declspec(dllexport)
 #elif __linux__
 	#define DLL_EXPORT extern "C" __attribute__((visibility("default")))
