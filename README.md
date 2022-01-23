@@ -1,4 +1,4 @@
-# 🔢 Bit32
+# 🔢 Bit32 ![gmod-server-test](https://img.shields.io/github/workflow/status/Pika-Software/gm_bit32/Linux?label=gmod-servers-test&logo=lua&logoColor=blue&style=for-the-badge)
 Small module that provide good old `bit32` library (lbitlib.c) from lua (luajit `bit` aka `BitOp a C extension module blah blah` is bullshit with overflowing). Yes, this minidll **use gmod_common** becouse multiplatform and compatibility (I also don't want to fuck with how to get lua_\* functions from lua_shared). If you don't want to get involved with compiling, just click on the [releases](https://github.com/Pika-Software/gm_bit32/releases) and download needed.
 
 [Check original bit32 edit](https://github.com/ezdiy/lua-bit32/blob/master/bit32.c)
